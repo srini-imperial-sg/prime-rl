@@ -72,10 +72,10 @@ class EmailEnv(vf.ToolEnv):
         for assistant_content, tool_call in pending_tool_calls:
             tool_call_id: str = tool_call.get("id", "")
             try:
-                if not has_leading_think(assistant_content):
-                    raise ValueError(
-                        "assistant messages with tool_calls must start with <think>...</think>."
-                    )
+                # if not has_leading_think(assistant_content):
+                #     raise ValueError(
+                #         "assistant messages with tool_calls must start with <think>...</think>."
+                #     )
                 tool_name: str = tool_call.get("function", {}).get("name", "")
                 raw_tool_args = tool_call.get("function", {}).get("arguments", "{}")
                 if isinstance(raw_tool_args, str):

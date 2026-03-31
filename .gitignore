@@ -109,6 +109,9 @@ target/
 profile_default/
 ipython_config.py
 
+hf_cache_user/
+
+*enron_emails*/
 # pyenv
 #   For a library or package, you might want to ignore these files since the code is
 #   intended to run in multiple environments; otherwise, check them in:
@@ -196,3 +199,6 @@ debug_I2_zero_band
 .idea
 
 outputs/
+environments/agent_search/data/enron_emails.db
+environments/agent_search/data/enron_emails.db-shm
+environments/agent_search/data/enron_emails.db-wal

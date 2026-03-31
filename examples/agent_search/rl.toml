@@ -1,7 +1,7 @@
-inference_gpu_ids = [4,5]
+inference_gpu_ids = [0,1]
 trainer_gpu_ids = [2,3]
 
-max_steps = 100
+max_steps = 2000
 seq_len = 4096
 
 [model]
@@ -9,14 +9,14 @@ name = "Qwen/Qwen3-4B-Instruct-2507"
 
 [wandb]
 project = "rl_srini_2026"
-name = "agent_search_thinking"
+name = "agent_search_2000_steps"
 
 [trainer.optim]
 lr=1e-5
 weight_decay=0.0
 
 [trainer.model.lora]
-rank = 8
+rank = 16
 dropout = 0.0
 target_modules = [
     "q_proj",
@@ -40,7 +40,7 @@ timeout = 120
 name = "qwen3-4b-agent_search"
 
 [orchestrator.sampling]
-max_tokens = 2048
+max_tokens = 4096
 
 [orchestrator.buffer]
 online_difficulty_filtering = true
@@ -56,4 +56,4 @@ args = { judge_model = "hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4", ju
 [inference.model]
 enable_auto_tool_choice = true
 tool_call_parser = "hermes"
-max_model_len = 4096
+max_model_len = 16384
