@@ -2,38 +2,23 @@ import os
 import re
 import ast
 from pathlib import Path
-
+import json
 import verifiers as vf
 from datasets import load_dataset
 from openai import AsyncOpenAI
 from verifiers.rubrics.judge_rubric import JudgeRubric
 
 from email_env import EmailEnv
-from utils import read_email, search_emails_with_keywords, search_emails
-from verifiers.utils.tool_utils import convert_func_to_oai_tool
+from utils import read_email, search_emails_with_keywords, search_emails, final_answer_tool
+from verifiers.utils.tool_utils import convert_func_to_tool_def
 
 ENV_DIR = Path(__file__).resolve().parent
 system_prompt = (ENV_DIR / "system_prompt.txt").read_text(encoding="utf-8")
 
 
 def extract_fn(text: str) -> str:
-    match = re.search(r"<answer>\s*(?P<answer_text>.*?)\s*</answer>", text, re.DOTALL)
-    if not match:
-        return ""
-    answer_text = match.group("answer_text")
-    answer_text = re.sub(
-        r"<sources>\s*.*?\s*</sources>",
-        "",
-        answer_text,
-        flags=re.DOTALL,
-    )
-    return answer_text.strip()
-
-# def extract_fn(text: str) -> str:
-#     match = re.search(r"<answer>\s*(?P<answer_text>.*?)\s*</answer>", text, re.DOTALL)
-#     if not match:
-#         return ""
-#     return match.group("answer_text").strip()
+    match = re.search(r"<answer>\s*(.*?)\s*</answer>", text, re.DOTALL)
+    return match.group(1).strip() if match else ""
 
 
 def format_prompt_fn(prompt: str, system_prompt: str = None, email_id: str = None, query_date: str = None, message_ids: list[str] = None) -> str:
@@ -51,40 +36,41 @@ def format_prompt_fn(prompt: str, system_prompt: str = None, email_id: str = Non
 
 
 def format_reward_func(completion) -> float:
-    text = completion[-1]["content"].strip()
-    sibling_pattern = re.compile(
-        r"\A\s*<answer>\s*(?P<answer_text>.*?)\s*</answer>\s*"
-        r"<sources>\s*(?P<sources_block>.*?)\s*</sources>\s*\Z",
+    assistant_messages = [msg for msg in completion if msg.role == "assistant"]
+    if not assistant_messages:
+        return 0.0
+
+    content = assistant_messages[-1].content
+    if not isinstance(content, str):
+        return 0.0
+
+    match = re.fullmatch(
+        r"\s*<answer>\s*(.*?)\s*</answer>\s*<sources>\s*(.*?)\s*</sources>\s*",
+        content,
         re.DOTALL,
     )
-    if not sibling_pattern.search(text):
+    if not match:
+        return 0.0
+
+    try:
+        ids = json.loads(match.group(2))
+    except Exception:
+        return 0.0
+
+    if not isinstance(ids, list) or not all(isinstance(x, str) for x in ids):
         return 0.0
 
     return 1.0
+
+
     
-# def format_reward_func(completion) -> float:
-#     text = completion[-1]["content"].strip()
-#     nested_pattern = re.compile(
-#         r"\A\s*<answer>\s*(?P<answer_text>.*?)\s*"
-#         r"<sources>\s*(?P<sources_block>.*?)\s*</sources>\s*"
-#         r"</answer>\s*\Z",
-#         re.DOTALL,
-#     )
-#     if not nested_pattern.search(text):
-#         return 0.0
-#     # sources = extract_email_sources_fn(text)
-#     # if not sources:
-#     #     return 0.0
-
-#     return 1.0
-
-
 def load_environment(
     judge_base_url: str, 
     judge_api_key: str, 
     judge_model: str,
-    use_thinking: bool = True,
-    num_train_examples: int = 1000,
+    sample_seed: int = 0,
+    num_train_examples: int = 500,
+    num_test_examples: int = 100,
     MAX_TURNS: int = 10,
     ) -> vf.Environment:
 
@@ -104,7 +90,7 @@ def load_environment(
 
     async def judge_reward_func(judge, prompt, completion, answer, state) -> float:
         judge_response = await judge(prompt, completion, answer, state)
-        if "yes" in judge_response.lower():
+        if judge_response.strip().lower() == "yes":
             return 1.0
         else:
             return 0.0
@@ -114,9 +100,9 @@ def load_environment(
     
     dataset = load_dataset("corbt/enron_emails_sample_questions")
 
-    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=10)
-    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=10).select(range(70,75))
-    tools = [search_emails_with_keywords, read_email]
+    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=10).shuffle(seed=sample_seed).select(range(num_train_examples))
+    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=10).shuffle(seed=sample_seed).select(range(num_test_examples))
+    tools = [search_emails_with_keywords, read_email, final_answer_tool]
 
     # updated_system_prompt = system_prompt.format(MAX_TURNS=MAX_TURNS)
     # print("updated_system_prompt is ", updated_system_prompt)

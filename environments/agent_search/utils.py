@@ -180,6 +180,20 @@ def search_emails(
 
     return [SearchResult(message_id=row[0], snippet=row[1]) for row in results]
 
+def final_answer_tool(answer: str, ids: list[str]) -> str:
+    """
+    This tool is used to generate the final answer after extensive search.
+    
+    Args:
+        answer: The answer to the question.
+        ids: The list of message ids used to answer the question.
+
+    Returns:
+        A FinalAnswer object.
+    """
+    return FinalAnswer(answer=answer, source_ids=ids)
+
+
 def read_email(message_id: str) -> Optional[Email]:
     """Retrieve a single email by its message_id"""
     conn = get_db_connection()

@@ -8,9 +8,9 @@
 #   --debug
 
 
-  
+
 
 #Qwen/Qwen3-4B-Instruct-2507
 
 # In the `Inference` pane
-CUDA_VISIBLE_DEVICES=0 uv run inference --data-parallel-size 1 --model.name /home/srini/rl_work/srini_2026_rl/prime-rl/outputs/weights/step_500 --model.enable_auto_tool_choice --model.tool_call_parser hermes --model.max_model_len 16384
+CUDA_VISIBLE_DEVICES=0 uv run inference --data-parallel-size-local 1 --model.name Qwen/Qwen3-4B --model.tool_call_parser hermes --model.max_model_len 16384

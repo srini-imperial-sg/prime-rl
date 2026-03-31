@@ -2,7 +2,7 @@
 
 
 uv run vf-eval agent_search \
-  -m  /home/srini/rl_work/srini_2026_rl/prime-rl/outputs/agent_search/weights/step_600 \
+  -m  Qwen/Qwen3-4B \
   -b http://localhost:8000/v1 \
   -n 3 \
   --max-tokens 8192 \
