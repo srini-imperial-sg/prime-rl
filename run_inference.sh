@@ -13,4 +13,4 @@
 #Qwen/Qwen3-4B-Instruct-2507
 
 # In the `Inference` pane
-CUDA_VISIBLE_DEVICES=0 uv run inference --data-parallel-size-local 1 --model.name Qwen/Qwen3-4B --model.tool_call_parser hermes --model.max_model_len 16384
+CUDA_VISIBLE_DEVICES=2 uv run inference --data-parallel-size-local 1 --model.name Qwen/Qwen3-4B-Instruct-2507 --model.tool_call_parser hermes --model.max_model_len 16384

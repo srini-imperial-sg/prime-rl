@@ -35,7 +35,9 @@ def format_prompt_fn(prompt: str, system_prompt: str = None, email_id: str = Non
     return { 'prompt': messages, 'info': info}
 
 
-def format_reward_func(completion) -> float:
+def format_reward_func(completion, state) -> float:
+    if not used_final_tool(state):
+        return 0.0
     assistant_messages = [msg for msg in completion if msg.role == "assistant"]
     if not assistant_messages:
         return 0.0
@@ -61,6 +63,18 @@ def format_reward_func(completion) -> float:
         return 0.0
 
     return 1.0
+
+# def final_tool_reward_func(state) -> float:
+#     return 1.0 if state.get("stop_condition") == "has_final_env_response" else 0.0
+
+def used_final_tool(state) -> bool:
+    return state.get("stop_condition") == "has_final_env_response"
+
+
+def is_truncated_rollout(state) -> bool:
+    if state.get("is_truncated", False):
+        return True
+    return any(step.get("is_truncated", False) for step in state.get("trajectory", []))
 
 
     
@@ -89,18 +103,22 @@ def load_environment(
     )
 
     async def judge_reward_func(judge, prompt, completion, answer, state) -> float:
+        if not used_final_tool(state):
+            return 0.0
+        if is_truncated_rollout(state):
+            return 0.0
         judge_response = await judge(prompt, completion, answer, state)
         if judge_response.strip().lower() == "yes":
             return 1.0
         else:
             return 0.0
     
-    judge_rubric.add_reward_func(judge_reward_func, weight=0.8)
-    judge_rubric.add_reward_func(format_reward_func, weight=0.2)
+    judge_rubric.add_reward_func(judge_reward_func) 
+    # judge_rubric.add_reward_func(format_reward_func, weight=0.1)
     
     dataset = load_dataset("corbt/enron_emails_sample_questions")
 
-    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=10).shuffle(seed=sample_seed).select(range(num_train_examples))
+    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=5).shuffle(seed=100).select(range(num_train_examples))
     test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=10).shuffle(seed=sample_seed).select(range(num_test_examples))
     tools = [search_emails_with_keywords, read_email, final_answer_tool]
 
