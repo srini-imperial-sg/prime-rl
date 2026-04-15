@@ -6,6 +6,10 @@
             "pages": [
                 "index",
                 "entrypoints",
+                "end_to_end",
+                "continuous_batching",
+                "rollout_storage",
+                "weight_transfer",
                 "configs",
                 "environments",
                 "async",

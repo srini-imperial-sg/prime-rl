@@ -10,8 +10,7 @@
 
 model: hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4
 host: "127.0.0.1"
-port: 6379
+port: 8001
 uvicorn-log-level: "info"
 max_model_len: 4096
-quantization: "awq"
 tensor_parallel_size: 2

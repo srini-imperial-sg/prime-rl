@@ -10,6 +10,7 @@ import verifiers as vf
 import wandb
 from transformers.tokenization_utils import PreTrainedTokenizer
 from wandb.errors import CommError
+from verifiers.utils.message_utils import serialize_messages_for_output
 
 from prime_rl.configs.shared import WandbConfig, WandbWithExtrasConfig
 from prime_rl.utils.chat_template import deserialize_tool_calls

@@ -72,10 +72,7 @@ class EmailEnv(vf.ToolEnv):
                             )
 
                         state["final_env_response"] = [
-                            {
-                                "role": "assistant",
-                                "content": final_text,
-                            }
+                            vf.AssistantMessage(content=final_text, role="assistant")
                         ]
 
                         # do not call self.call_tool for final_answer_tool

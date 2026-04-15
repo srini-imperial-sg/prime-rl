@@ -8,6 +8,8 @@ from typing import Literal
 
 DB_PATH = Path(__file__).resolve().parent / "data" / "enron_emails.db"
 
+conn = None
+
 @dataclass
 class SearchResult:
     message_id: str
@@ -48,27 +50,17 @@ _THREAD_LOCAL = threading.local()
 _CONNECTION_LOCK = threading.Lock()
 
 
+
 def _initialize_connection() -> sqlite3.Connection:
+    global conn
     conn = sqlite3.connect(DB_PATH, check_same_thread=False, timeout=5.0)
-    conn.execute("PRAGMA journal_mode = WAL;")
-    conn.execute("PRAGMA busy_timeout = 5000;")
     return conn
 
 
 def get_db_connection():
-    """Get a thread-local database connection, creating one if needed."""
-    if not DB_PATH.exists():
-        raise ValueError(f"Database file {DB_PATH} does not exist. Please create it first.")
-
-    conn = getattr(_THREAD_LOCAL, "conn", None)
-    if conn is not None:
-        return conn
-
-    with _CONNECTION_LOCK:
-        conn = getattr(_THREAD_LOCAL, "conn", None)
-        if conn is None:
-            conn = _initialize_connection()
-            _THREAD_LOCAL.conn = conn
+    global conn
+    if conn is None:
+        conn = _initialize_connection()
     return conn
 
 def search_emails_with_keywords(keywords: List[str]) -> List[SearchResult]:

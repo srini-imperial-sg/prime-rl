@@ -1,8 +1,9 @@
-import os
-import re
-import ast
-from pathlib import Path
 import json
+import asyncio
+from pathlib import Path
+import re
+from typing import Any
+
 import verifiers as vf
 from datasets import load_dataset
 from openai import AsyncOpenAI
@@ -82,16 +83,24 @@ def load_environment(
     judge_base_url: str, 
     judge_api_key: str, 
     judge_model: str,
+    judge_timeout: float = 30.0,
+    judge_max_retries: int = 2,
+    judge_max_concurrent: int = 2,
+    judge_sampling_args: dict[str, Any] | None = None,
     sample_seed: int = 0,
-    num_train_examples: int = 500,
+    num_train_examples: int = 3000,
     num_test_examples: int = 100,
     MAX_TURNS: int = 10,
     ) -> vf.Environment:
-
+    resolved_judge_sampling_args = {"temperature": 0.0, "max_completion_tokens": 8}
+    if judge_sampling_args is not None:
+        resolved_judge_sampling_args.update(judge_sampling_args)
 
     judge_client = AsyncOpenAI(
         base_url=judge_base_url,
         api_key=judge_api_key,
+        timeout=judge_timeout,
+        max_retries=judge_max_retries,
     )
 
     parser = vf.Parser(extract_fn=extract_fn)
@@ -101,13 +110,17 @@ def load_environment(
         judge_model=judge_model,
         parser=parser
     )
+    judge_semaphore = asyncio.Semaphore(judge_max_concurrent) if judge_max_concurrent > 0 else None
 
     async def judge_reward_func(judge, prompt, completion, answer, state) -> float:
         if not used_final_tool(state):
             return 0.0
         if is_truncated_rollout(state):
             return 0.0
+        
         judge_response = await judge(prompt, completion, answer, state)
+      
+        
         if judge_response.strip().lower() == "yes":
             return 1.0
         else:
@@ -119,7 +132,7 @@ def load_environment(
     dataset = load_dataset("corbt/enron_emails_sample_questions")
 
     train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=5).shuffle(seed=100).select(range(num_train_examples))
-    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=10).shuffle(seed=sample_seed).select(range(num_test_examples))
+    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=sample_seed).select(range(num_test_examples))
     tools = [search_emails_with_keywords, read_email, final_answer_tool]
 
     # updated_system_prompt = system_prompt.format(MAX_TURNS=MAX_TURNS)

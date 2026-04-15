@@ -1,2 +1,7 @@
   # In the `Trainer` pane
-CUDA_VISIBLE_DEVICES=2,3 uv run rl @ examples/agent_search/rl.toml --output_dir outputs/agent_search
+
+export HF_HOME=/mnt/nvme1/srini/cache/
+export HF_DATASETS_CACHE=/mnt/nvme1/srini/cache
+export HF_HUB_CACHE=/mnt/nvme1/srini/cache/hub
+
+CUDA_VISIBLE_DEVICES=0,2,7 uv run rl @ examples/agent_search/rl.toml --output_dir outputs/agent_search_post_sft

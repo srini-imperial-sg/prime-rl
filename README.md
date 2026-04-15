@@ -211,6 +211,10 @@ These guides are designed to be run from a Slurm cluster but can also be adapted
 Check out the [docs](docs) directory for in-depth guides on how to use PRIME-RL.
 
 - [**Entrypoints**](docs/entrypoints.md) - Overview of the main components (orchestrator, trainer, inference) and how to run SFT, RL, and evals
+- [**End-to-End Infrastructure Walkthrough**](docs/end_to_end.md) - Code-anchored walkthrough of how launch, rollout generation, training, storage, and inference weight updates fit together
+- [**Continuous Batching**](docs/continuous_batching.md) - Detailed walkthrough of the orchestrator scheduler that keeps rollout requests continuously in flight
+- [**Rollout Storage**](docs/rollout_storage.md) - Exact explanation of where rollouts live in memory, on disk, and in checkpoints
+- [**Weight Transfer**](docs/weight_transfer.md) - Detailed walkthrough of how new trainer weights are moved into inference via filesystem, NCCL, or LoRA updates
 - [**Configs**](docs/configs.md) - Configuration system using TOML files, CLI arguments, and environment variables
 - [**Environments**](docs/environments.md) - Installing and using verifiers environments from the Environments Hub
 - [**Async Training**](docs/async.md) - Understanding asynchronous off-policy training and step semantics
