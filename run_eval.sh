@@ -1,6 +1,6 @@
 # In the `Trainer` pane
 
-model_path=/home/srini/rl_work/srini_2026_rl/prime-rl/outputs/agent_search_post_sft/weights/step_600
+model_path=Qwen/Qwen3-4B-Instruct-2507
 
 uv run vf-eval agent_search \
     -m "$model_path" \

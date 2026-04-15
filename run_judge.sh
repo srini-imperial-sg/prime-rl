@@ -1,1 +1,1 @@
-CUDA_VISIBLE_DEVICES=3,4 uv run vllm serve --config judge_config.yaml
+CUDA_VISIBLE_DEVICES=2,7 uv run vllm serve --config judge_config.yaml

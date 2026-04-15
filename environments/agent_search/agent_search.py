@@ -3,7 +3,7 @@ import asyncio
 from pathlib import Path
 import re
 from typing import Any
-
+import json
 import verifiers as vf
 from datasets import load_dataset
 from openai import AsyncOpenAI
@@ -77,8 +77,35 @@ def is_truncated_rollout(state) -> bool:
         return True
     return any(step.get("is_truncated", False) for step in state.get("trajectory", []))
 
-
+def check_message_ids(completion, state) -> float:
+    # assistant_messages = 
+    # print("answer inside check_message_ids is ")
+    if not used_final_tool(state):
+        return 0.0
+    if is_truncated_rollout(state):
+        return 0.0
     
+    source_ids_str = state['final_env_response'][0].content.split("<sources>")[1].split("</sources")[0]
+    pred_ids = json.loads(source_ids_str)
+    gold_ids = state.get("info", {}).get("message_ids", [])
+    
+    if not all(isinstance(x, str) for x in pred_ids):
+        return 0.0
+    
+    if len(pred_ids) != len(gold_ids):
+        return 0.0
+
+
+    gold = { x.strip() for x in gold_ids }
+    pred = { x.strip() for x in pred_ids }
+    
+
+    if gold == pred:
+        return 1.0
+    else:
+        return 0.0
+
+
 def load_environment(
     judge_base_url: str, 
     judge_api_key: str, 
@@ -88,7 +115,7 @@ def load_environment(
     judge_max_concurrent: int = 2,
     judge_sampling_args: dict[str, Any] | None = None,
     sample_seed: int = 0,
-    num_train_examples: int = 3000,
+    num_train_examples: int = 1000,
     num_test_examples: int = 100,
     MAX_TURNS: int = 10,
     ) -> vf.Environment:
@@ -110,7 +137,7 @@ def load_environment(
         judge_model=judge_model,
         parser=parser
     )
-    judge_semaphore = asyncio.Semaphore(judge_max_concurrent) if judge_max_concurrent > 0 else None
+
 
     async def judge_reward_func(judge, prompt, completion, answer, state) -> float:
         if not used_final_tool(state):
@@ -118,20 +145,20 @@ def load_environment(
         if is_truncated_rollout(state):
             return 0.0
         
-        judge_response = await judge(prompt, completion, answer, state)
       
-        
+        judge_response = await judge(prompt, completion, answer, state)
         if judge_response.strip().lower() == "yes":
             return 1.0
         else:
             return 0.0
     
-    judge_rubric.add_reward_func(judge_reward_func) 
+    judge_rubric.add_reward_func(judge_reward_func, weight=0.9) 
+    judge_rubric.add_reward_func(check_message_ids, weight=0.1) 
     # judge_rubric.add_reward_func(format_reward_func, weight=0.1)
     
     dataset = load_dataset("corbt/enron_emails_sample_questions")
 
-    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=5).shuffle(seed=100).select(range(num_train_examples))
+    train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=100).select(range(num_train_examples))
     test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=sample_seed).select(range(num_test_examples))
     tools = [search_emails_with_keywords, read_email, final_answer_tool]
 

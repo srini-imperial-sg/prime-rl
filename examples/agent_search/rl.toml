@@ -4,17 +4,17 @@ seq_len = 4096
 
 [deployment]
 num_infer_gpus = 1
-num_train_gpus = 2
+num_train_gpus = 1
 
 
 [model]
-name = "/home/srini/rl_work/srini_2026_rl/prime-rl/sft_agent/merged"
+name = "Qwen/Qwen3-4B-Instruct-2507"
 
 
 
 [wandb]
 project = "rl_srini_2026"
-name = "agent_search_run_3_gpus_4096_negative_reward"
+name = "agent_search_run_3_gpus_tool_custom"
 
 [trainer.optim]
 lr=1e-5
@@ -37,7 +37,7 @@ target_modules = [
 [orchestrator]
 batch_size = 8
 rollouts_per_example = 8
-oversampling_factor = 2.0
+oversampling_factor = 1.0
 
 [orchestrator.client]
 timeout = 120
@@ -45,7 +45,7 @@ timeout = 120
 [orchestrator.model.lora]
 name = "qwen3-4b-agent_search"
 
-[orchestrator.sampling]
+[orchestrator.train.sampling]
 max_tokens = 512
 
 [orchestrator.buffer]
@@ -54,14 +54,14 @@ easy_threshold = 1.0
 hard_threshold = 0.0
 seed = 42
 
-[[orchestrator.env]]
+[[orchestrator.train.env]]
 id = "agent_search"
 args = { judge_model = "hugging-quants/Meta-Llama-3.1-70B-Instruct-AWQ-INT4", judge_base_url = "http://localhost:8001/v1", judge_api_key = "abc", judge_timeout = 30.0, judge_max_retries = 0, judge_max_concurrent = 2 }
 
 
 [orchestrator.eval]
 interval = 30
-num_examples = 30
+num_examples = 16
 rollouts_per_example = 3
 
 
