@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 from typing import Annotated, Literal, TypeAlias
 
@@ -101,6 +102,14 @@ class VLMConfig(BaseConfig):
         str,
         Field(description="Dotted attribute path to the language model module (e.g. 'model.language_model')."),
     ]
+
+    freeze_vision_encoder: Annotated[
+        bool,
+        Field(
+            description="Whether to freeze the vision encoder. When False, the vision encoder is trainable "
+            "and FSDP-sharded per-block. Has no effect with LoRA (LoRA freezes all non-adapter parameters).",
+        ),
+    ] = True
 
 
 class BaseModelConfig(BaseConfig):
@@ -263,25 +272,24 @@ class LogConfig(BaseConfig):
 
     level: Annotated[
         str,
-        Field(description="Logging level for the process. Will determine the logging verbosity and format."),
-    ] = "info"
+        Field(
+            default_factory=lambda: os.environ.get("PRIME_LOG_LEVEL", "info"),
+            description="Logging level for the process. Will determine the logging verbosity and format. Defaults to the PRIME_LOG_LEVEL env var if set, else 'info'.",
+        ),
+    ]
 
     vf_level: Annotated[
         str,
-        Field(description="Logging level for the verifiers package. Will determine the logging verbosity and format."),
-    ] = "info"
-
-    file: Annotated[
-        bool,
         Field(
-            description="Whether to log to a file. If True, will log to a file in the output directory.",
+            default_factory=lambda: os.environ.get("PRIME_VF_LOG_LEVEL", "info"),
+            description="Logging level for the verifiers package. Will determine the logging verbosity and format. Defaults to the PRIME_VF_LOG_LEVEL env var if set, else 'info'.",
         ),
-    ] = True
+    ]
 
-    env_worker_logs: Annotated[
+    json_logging: Annotated[
         bool,
         Field(
-            description="Whether env workers log to files. If True, workers write to logs/env_workers/{env_name}.log.",
+            description="Emit JSON logs (newline-delimited) for log aggregation (Loki, Grafana, etc.).",
         ),
     ] = False
 
@@ -292,12 +300,14 @@ class LogConfig(BaseConfig):
         ),
     ] = False
 
-    json_logging: Annotated[
-        bool,
-        Field(
-            description="Emit JSON logs (newline-delimited) for log aggregation (Loki, Grafana, etc.).",
-        ),
-    ] = False
+
+class TrainerLogConfig(LogConfig):
+    """Trainer-specific log config."""
+
+    ranks_filter: Annotated[
+        list[int],
+        Field(description="Which trainer ranks to show in console output. Passed to torchrun's --local-ranks-filter."),
+    ] = [0]
 
 
 class LogExtrasConfig(BaseConfig):
