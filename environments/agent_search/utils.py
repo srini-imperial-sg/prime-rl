@@ -187,7 +187,16 @@ def final_answer_tool(answer: str, ids: list[str]) -> str:
 
 
 def read_email(message_id: str) -> Optional[Email]:
-    """Retrieve a single email by its message_id"""
+    """
+    Reads an email by its message_id
+    
+    Args:
+        message_id: The message id of the email to retrieve.
+
+    Returns:
+        An Email object.
+    """
+
     conn = get_db_connection()
     cursor = conn.cursor()
 

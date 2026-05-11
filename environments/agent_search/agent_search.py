@@ -115,8 +115,8 @@ def load_environment(
     judge_max_concurrent: int = 2,
     judge_sampling_args: dict[str, Any] | None = None,
     sample_seed: int = 0,
-    num_train_examples: int = 1000,
-    num_test_examples: int = 100,
+    num_train_examples: int = 10000,
+    num_test_examples: int = 200,
     MAX_TURNS: int = 10,
     ) -> vf.Environment:
     resolved_judge_sampling_args = {"temperature": 0.0, "max_completion_tokens": 8}
@@ -159,11 +159,9 @@ def load_environment(
     dataset = load_dataset("corbt/enron_emails_sample_questions")
 
     train_dataset = dataset['train'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=100).select(range(num_train_examples))
-    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=sample_seed).select(range(num_test_examples))
+    test_dataset = dataset['test'].filter(lambda x: len(x['message_ids']) <=3).shuffle(seed=100).select(range(num_test_examples))
     tools = [search_emails_with_keywords, read_email, final_answer_tool]
 
-    # updated_system_prompt = system_prompt.format(MAX_TURNS=MAX_TURNS)
-    # print("updated_system_prompt is ", updated_system_prompt)
 
     train_dataset = train_dataset.map(lambda x: format_prompt_fn(
         prompt=x['question'],
